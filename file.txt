@@ -1,3 +1,0 @@
-white piece A2
-white king C6
-black piece H4

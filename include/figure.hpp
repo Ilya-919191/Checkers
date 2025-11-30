@@ -2,6 +2,7 @@
 #define FIGURE_HPP
 
 #include <string>
+#include "checker_element.hpp"
 
 enum class FigureSide {
 	white,
@@ -14,11 +15,11 @@ enum class FigureState {
 	king
 };
 
-class Figure {
+class Figure : public CheckerElement {
 	FigureSide side{FigureSide::white};
 	FigureState state{FigureState::none};
-	int x{1}, y{1};
 	std::string symbol{" "};
+	bool isPassFigure{false};
 	
 public:
 	Figure() = default;
@@ -26,14 +27,13 @@ public:
 
 	FigureSide getSide() const { return side; }
 	FigureState getState() const { return state; }
-	int getX() const { return x; }
-	int getY() const { return y; }
 	std::string getSymbol() const { return symbol; }
+	bool isPass() const { return isPassFigure; }
 
 	void setSide(FigureSide side_);
 	void setState(FigureState state_);
-	void setPosition(std::string position_);
 	void setSymbol(std::string symbol_);
+	void setPass(bool isPass);
 };
 
 #endif // FIGURE_HPP

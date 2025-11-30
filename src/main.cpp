@@ -1,19 +1,19 @@
-#include <cstdlib>
 #include <iostream>
-#include <cstdlib>
 #include "checker_board.hpp"
 #include "checker_board.hpp"
 #include "interface.hpp"
 
 int main(void)
 {
-	Interface interface;
 	CheckerBoard checkerBoard(true);
+	Interface interface(checkerBoard);
 
-	system("clear");
-	interface.drowBoard(checkerBoard);
-	interface.fillBoardFromFile(checkerBoard, "./file.txt");
-	interface.drowBoard(checkerBoard);
-
+	try {
+		interface.fillBoardFromFile("./figures.txt");
+		interface.drowBoard();
+		interface.showPossiblyAttack();
+	} catch (const std::string err) {
+		std::cerr << err;
+	}
 	return 0;
 }
