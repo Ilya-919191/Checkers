@@ -1,4 +1,5 @@
 #include <iostream>
+#include "utils.hpp"
 #include "checker_board.hpp"
 #include "interface.hpp"
 
@@ -7,7 +8,7 @@ int main(void) {
 	Interface interface(checkerBoard);
 
 	try {
-		system("clear");
+		CLS();
 		interface.setWhiteSide();
 		interface.fillBoardFromFile("./figures.txt");
 		interface.showMenu();

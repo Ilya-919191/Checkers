@@ -10,6 +10,7 @@
 #include "checker_board.hpp"
 #include "figure.hpp"
 #include "variables.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
@@ -96,7 +97,7 @@ void Interface::clearTiles() {
 
 void Interface::drowBoard(string text)
 {
-	system("clear");
+	CLS();
   cout << text << endl << endl;
 
 	for (int i = 7; i >= 0; i--)
@@ -771,7 +772,7 @@ void Interface::drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, D
 }
 
 void Interface::whereWhiteSide() {
-  system("clear");
+  CLS();
   cout << endl << ((whiteInDown) ? "White side is down." : "White side is up.");
   cout << endl << "[Press Enter to continue]" << endl;
   cin.ignore();
