@@ -13,7 +13,9 @@ int main(void) {
 		interface.fillBoardFromFile("./figures.txt");
 		interface.showMenu();
 	} catch (const std::string err) {
-		std::cerr << err;
+		std::cerr << std::endl << err;
+	} catch (const char* err) {
+		std::cerr << std::endl << err;
 	}
 	return 0;
 }

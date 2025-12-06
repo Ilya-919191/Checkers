@@ -1,6 +1,5 @@
 #include <string>
 #include "checker_element.hpp"
-#include <iostream>
 
 CheckerElement::CheckerElement(std::string position) {
   setPosition(position);

@@ -41,7 +41,7 @@ class Interface
 	void setBackgroudOfTile(int i, int j, TileMoment moment);
 
 	bool canAttackTarget(int attackerRow, int attackerCol, int targetRow, int targetCol, Figure& attacker);
-  void visualizeThreats(int targetRow, int targetCol, const vector<pair<string, pair<int, int>>>& threats);
+  void visualizeThreats(int targetRow, int targetCol, const vector<pair<string, pair<int, int>>>& threats, bool isDrow = true);
   Direction findAttackDirection(int fromRow, int fromCol, int toRow, int toCol);
   void drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, Direction dir);
 	int figureAnalisis(int i, int j, Direction direction, Figure& startFigure, bool isDrawing,
@@ -58,6 +58,7 @@ public:
 	void showPossibleMovesAndAttacks();
 	void drowBoard(string text = "");
 	void showThreatsToFigure();
+	void showThreatsToAllFigures();
 	void showMenu();
 };
 

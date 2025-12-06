@@ -396,7 +396,7 @@ void Interface::showPossibleMovesAndAttacks()
   
   int row = 0, col = 0;
   if (!checker.transformPosition(selectPos, col, row)) {
-      throw "Invalid position!";
+    throw "Invalid position!";
   }
   Figure& figure = checker.getFigures()[row][col];
 
@@ -497,7 +497,7 @@ void Interface::showPossibleMovesAndAttacks()
     cout << endl;
     
     if (maxAttacks > 1) {
-      cout <<endl << maxAttacks << " figures can be captured in one turn." << endl;
+      cout << endl << maxAttacks << " figures can be captured in one turn." << endl;
     }
     
   } else {
@@ -553,25 +553,22 @@ void Interface::showThreatsToFigure()
   
   int row = 0, col = 0;
   if (!checker.transformPosition(selectPos, col, row)) {
-    cout << "Invalid position!" << endl;
-    cin.ignore();
-    cin.get();
-    return;
+    throw "Invalid position!";
   }
 
   vector<pair<string, pair<int, int>>> threateningFigures;
   Figure& targetFigure = checker.getFigures()[row][col];
 
-  // Перевіряємо всі фігури на дошці
+  // Перевіряємо всі фігури на дошці.
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 8; j++) {
       Figure& potentialThreat = checker.getFigures()[i][j];
       
-      // Пропускаємо порожні клітини та фігури того ж кольору
+      // Пропускаємо порожні клітини та фігури того ж кольору.
       if (potentialThreat.getState() == FigureState::none) continue;
       if (potentialThreat.getSide() == targetFigure.getSide()) continue;
       
-      // Перевіряємо чи може ця фігура атакувати цільову фігуру
+      // Перевіряємо чи може ця фігура атакувати цільову фігуру.
       if (canAttackTarget(i, j, row, col, potentialThreat)) {
         char colChar = 'A' + j;
         int rowNum = i + 1;
@@ -585,11 +582,11 @@ void Interface::showThreatsToFigure()
     }
   }
 
-  // Візуалізуємо загрози на дошці
+  // Візуалізуємо загрози на дошці.
   visualizeThreats(row, col, threateningFigures);
   drowBoard(nameSection);
   
-  // Перевіряємо, чи є фігура на цій позиції
+  // Перевіряємо, чи є фігура на цій позиції.
   if (targetFigure.getState() == FigureState::none) {
     cerr << "No figure at position " << selectPos << "!" << endl;
     cin.ignore();
@@ -617,18 +614,66 @@ void Interface::showThreatsToFigure()
   cin.get();
 }
 
+void Interface::showThreatsToAllFigures()
+{
+  clearTiles();
+
+  const string nameSection = "===== THREATS TO ALL FIGURES =====";
+  drowBoard(nameSection);
+
+  string selectSide;
+  cout << endl << "Enter side [white/black] (w/b): ";
+  if (!(cin >> selectSide) || (selectSide != "w" && selectSide != "white" && selectSide != "b" && selectSide != "black")) {
+    throw "Invalid side!";
+  }
+
+  FigureSide side = (selectSide == "w" || selectSide == "white") ? FigureSide::white : FigureSide::black;
+
+  for (int i = 0; i < 8; i++) {
+    for (int j = 0; j < 8; j++) {
+      Figure& figureOfSide = checker.getFigures()[i][j];
+      vector<pair<string, pair<int, int>>> threateningFigures;
+
+      if (figureOfSide.getSide() == side) {
+        // Перевіряємо всі фігури на дошці.
+        for (int ti = 0; ti < 8; ti++) {
+          for (int tj = 0; tj < 8; tj++) {
+            Figure& potentialThreat = checker.getFigures()[ti][tj];
+            
+            // Пропускаємо порожні клітини та фігури того ж кольору.
+            if (potentialThreat.getState() == FigureState::none) continue;
+            if (potentialThreat.getSide() == figureOfSide.getSide()) continue;
+            
+            // Перевіряємо чи може ця фігура атакувати цільову фігуру.
+            if (canAttackTarget(ti, tj, i, j, potentialThreat)) {
+              threateningFigures.push_back({"", {ti, tj}});
+            }
+
+            visualizeThreats(ti, tj, threateningFigures, false);
+          }
+        }
+      }
+    }
+  }
+  drowBoard(nameSection);
+  
+  cout << endl << "[Press eny key to continue]" << endl;
+  cin.ignore();
+  cin.get();
+}
+
 bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow, int targetCol, Figure& attacker)
 {
-  // Якщо атакуюча фігура - король
+  // Якщо атакуюча фігура - король.
   if (attacker.getState() == FigureState::king) {
-    // Король може атакувати з будь-якого напрямку
+    // Король може атакувати з будь-якого напрямку.
     Direction directions[4] = {
       Direction::topRight, Direction::bottomRight, 
       Direction::topLeft, Direction::bottomLeft
     };
     
     for (Direction dir : directions) {
-      // Перевіряємо чи є цільова фігура в цьому напрямку
+      // Перевіряємо чи є цільова фігура в цьому напрямку.
       int checkRow = attackerRow;
       int checkCol = attackerCol;
 
@@ -638,9 +683,9 @@ bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow,
         
         Figure& nextFigure = checker.getFigures()[nextPos.first][nextPos.second];
         
-        // Якщо знайшли цільову фігуру
+        // Якщо знайшли цільову фігуру.
         if (nextPos.first == targetRow && nextPos.second == targetCol) {
-          // Перевіряємо чи є вільна клітка за нею
+          // Перевіряємо чи є вільна клітка за нею.
           pair<int, int> behindPos = getNextPosByDir(targetRow, targetCol, dir);
           if (!inBounds(behindPos.first, behindPos.second)) break;
           
@@ -651,7 +696,7 @@ bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow,
           break;
         }
         
-        // Якщо зустріли іншу фігуру - не можемо атакувати через неї
+        // Якщо зустріли іншу фігуру - не можемо атакувати через неї.
         if (nextFigure.getState() != FigureState::none) {
           break;
         }
@@ -661,9 +706,9 @@ bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow,
       }
     }
   } 
-  // Якщо атакуюча фігура - звичайна шашка
+  // Якщо атакуюча фігура - звичайна шашка.
   else {
-    // Визначаємо доступні напрямки для атаки
+    // Визначаємо доступні напрямки для атаки.
     vector<Direction> availableDirections;
     
     if (isWhiteInDown()) {
@@ -681,13 +726,13 @@ bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow,
     }
     
     for (Direction dir : availableDirections) {
-      // Перевіряємо чи є ворожа фігура поруч
+      // Перевіряємо чи є ворожа фігура поруч.
       pair<int, int> enemyPos = getNextPosByDir(attackerRow, attackerCol, dir);
       if (!inBounds(enemyPos.first, enemyPos.second)) continue;
       
-      // Якщо це цільова фігура
+      // Якщо це цільова фігура.
       if (enemyPos.first == targetRow && enemyPos.second == targetCol) {
-        // Перевіряємо чи є вільна клітка за нею
+        // Перевіряємо чи є вільна клітка за нею.
         pair<int, int> behindPos = getNextPosByDir(targetRow, targetCol, dir);
         if (!inBounds(behindPos.first, behindPos.second)) continue;
         
@@ -701,41 +746,42 @@ bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow,
   return false;
 }
 
-// Метод для візуалізації загроз
 void Interface::visualizeThreats(int targetRow, int targetCol, 
-                                const vector<pair<string, pair<int, int>>>& threats)
+                                const vector<pair<string, pair<int, int>>>& threats, bool isDrow)
 { 
-  // Позначаємо цільову фігуру
+  // Позначаємо цільову фігуру.
   setBackgroudOfTile(targetRow, targetCol, TileMoment::active);
   
-  // Позначаємо загрозні фігури
-  for (const auto& threat : threats) {
+  // Позначаємо загрозні фігури.
+  for (const pair<string, pair<int, int>>& threat : threats) {
     int threatRow = threat.second.first;
     int threatCol = threat.second.second;
     setBackgroudOfTile(threatRow, threatCol, TileMoment::attack);
   }
-  
-  for (const auto& threat : threats) {
-    int threatRow = threat.second.first;
-    int threatCol = threat.second.second;
-    
-    // Знаходимо напрямок атаки
-    Direction attackDir = findAttackDirection(threatRow, threatCol, targetRow, targetCol);
-    if (attackDir != Direction::none) {
-      // Малюємо лінію атаки
-      drawAttackLine(threatRow, threatCol, targetRow, targetCol, attackDir);
+
+  // Позначення лінії атаки.
+  if (isDrow) {
+    for (const pair<string, pair<int, int>>& threat : threats) {
+      int threatRow = threat.second.first;
+      int threatCol = threat.second.second;
+      
+      // Знаходимо напрямок атаки
+      Direction attackDir = findAttackDirection(threatRow, threatCol, targetRow, targetCol);
+      if (attackDir != Direction::none) {
+        // Малюємо лінію атаки
+        drawAttackLine(threatRow, threatCol, targetRow, targetCol, attackDir);
+      }
     }
   }
 }
 
-// Допоміжний метод для знаходження напрямку атаки
 Direction Interface::findAttackDirection(int fromRow, int fromCol, int toRow, int toCol)
 {
-  // Визначаємо різницю координат
+  // Визначаємо різницю координат.
   int rowDiff = toRow - fromRow;
   int colDiff = toCol - fromCol;
   
-  // Перевіряємо всі можливі напрямки
+  // Перевіряємо всі можливі напрямки.
   if (rowDiff > 0 && colDiff > 0 && abs(rowDiff) == abs(colDiff)) {
     return Direction::topRight;
   } else if (rowDiff < 0 && colDiff > 0 && abs(rowDiff) == abs(colDiff)) {
@@ -749,20 +795,19 @@ Direction Interface::findAttackDirection(int fromRow, int fromCol, int toRow, in
   return Direction::none;
 }
 
-// Допоміжний метод для малювання лінії атаки
 void Interface::drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, Direction dir)
 {
   int currentRow = fromRow;
   int currentCol = fromCol;
   
   while (currentRow != toRow || currentCol != toCol) {
-    // Позначаємо проміжні клітини
+    // Позначаємо проміжні клітини.
     if (!(currentRow == fromRow && currentCol == fromCol) &&
         !(currentRow == toRow && currentCol == toCol)) {
       setBackgroudOfTile(currentRow, currentCol, TileMoment::move);
     }
     
-    // Переходимо до наступної клітини
+    // Переходимо до наступної клітини.
     pair<int, int> nextPos = getNextPosByDir(currentRow, currentCol, dir);
     if (!inBounds(nextPos.first, nextPos.second)) break;
     
@@ -774,7 +819,7 @@ void Interface::drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, D
 void Interface::whereWhiteSide() {
   CLS();
   cout << endl << ((whiteInDown) ? "White side is down." : "White side is up.");
-  cout << endl << "[Press Enter to continue]" << endl;
+  cout << endl << "[Press eny key to continue]" << endl;
   cin.ignore();
   cin.get();
 }
@@ -785,23 +830,24 @@ void Interface::showMenu() {
     drowBoard("===== CHECKERS MENU =====");
     cout << endl << "1. Analyze figure moves and attacks" << endl;
     cout << "2. Analyze threats to figure" << endl;
-    cout << "3. Where is white side?" << endl;
-    cout << "4. Exit" << endl;
+    cout << "3. Analyze threats to all figures" << endl;
+    cout << "4. Where is white side?" << endl;
+    cout << "5. Exit" << endl;
     cout << endl << "Choice: ";
     
     int choice;
+    cin.clear();
+    cin.ignore();
     if (!(cin >> choice)) {
-      cin.clear();
-      cin.ignore();
-      cerr << "Invalid input! Please enter a number (1-3)." << endl;
-      continue;
+      throw "Invalid mode!";
     }
     
     switch (choice) {
       case 1: showPossibleMovesAndAttacks(); break;
       case 2: showThreatsToFigure(); break;
-      case 3: whereWhiteSide(); break;
-      case 4: return;
+      case 3: showThreatsToAllFigures(); break;
+      case 4: whereWhiteSide(); break;
+      case 5: return;
     }
   }
 }
