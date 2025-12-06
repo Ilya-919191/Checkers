@@ -31,28 +31,34 @@ struct AttackPath {
 class Interface
 {
 	CheckerBoard& checker;
+	bool whiteInDown{true};
 
 	void clearTiles();
+	void whereWhiteSide();
 	pair<int, int> getNextPosByDir(int i, int j, Direction direction);
 	Figure& getNextFigureByDir(int i, int j, Direction direction);
-	void setBackgroudOfTile(int i, int j, TileMoment moment);
 	Direction reversDir(Direction direction);
-	bool checkFigureForAttack(int i, int j, Direction direction, Figure& startFigure);
-	int figureAnalisis(int i, int j, Direction direction, Figure& startFigure, bool isDrawing,
-		bool isAttacking, int attackCount, AttackPath& currentPath, AttackPath& bestPath, vector<pair<int, int>>& visitedPositions);
+	void setBackgroudOfTile(int i, int j, TileMoment moment);
+
 	bool canAttackTarget(int attackerRow, int attackerCol, int targetRow, int targetCol, Figure& attacker);
   void visualizeThreats(int targetRow, int targetCol, const vector<pair<string, pair<int, int>>>& threats);
   Direction findAttackDirection(int fromRow, int fromCol, int toRow, int toCol);
   void drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, Direction dir);
+	int figureAnalisis(int i, int j, Direction direction, Figure& startFigure, bool isDrawing,
+										bool isAttacking, int attackCount, AttackPath& currentPath, AttackPath& bestPath,
+										vector<pair<int, int>>& visitedPositions);
+	void showWhoCanAttackFigure();
 
 public:
 	Interface(CheckerBoard& checkerBoard);
 
+	void setWhiteSide();
+	bool isWhiteInDown() const { return whiteInDown; }
 	void fillBoardFromFile(std::string fileName);
 	void showPossibleMovesAndAttacks();
 	void drowBoard(string text = "");
-	void showWhoCanAttackFigure();
 	void showThreatsToFigure();
+	void showMenu();
 };
 
 #endif // INTERFACE_HPP

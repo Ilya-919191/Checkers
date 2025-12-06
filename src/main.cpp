@@ -2,15 +2,15 @@
 #include "checker_board.hpp"
 #include "interface.hpp"
 
-int main(void)
-{
-	CheckerBoard checkerBoard(true);
+int main(void) {
+	CheckerBoard checkerBoard;
 	Interface interface(checkerBoard);
 
 	try {
+		system("clear");
+		interface.setWhiteSide();
 		interface.fillBoardFromFile("./figures.txt");
-		interface.showPossibleMovesAndAttacks();
-		interface.showThreatsToFigure();
+		interface.showMenu();
 	} catch (const std::string err) {
 		std::cerr << err;
 	}

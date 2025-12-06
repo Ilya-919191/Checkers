@@ -32,6 +32,18 @@ bool AttackPath::isAlreadyCaptured(int i, int j) const {
 	return false;
 }
 
+void Interface::setWhiteSide() {
+	int choice;
+	cout << "White side will be in down? (y/n): ";
+	cin >> choice;
+
+  if (choice == 'y') {
+    whiteInDown = true; // Білі внизу
+  } else {
+    whiteInDown = false; // Білі вгорі
+  }
+}
+
 Interface::Interface(CheckerBoard& checkerBoard) : checker(checkerBoard) {}
 
 void Interface::fillBoardFromFile(std::string fileName) {
@@ -160,16 +172,6 @@ void Interface::setBackgroudOfTile(int i, int j, TileMoment moment) {
 	checker.getBoard()[i][j].setTile(moment);
 }
 
-bool Interface::checkFigureForAttack(int i, int j, Direction direction, Figure& startFigure) {
-	pair<int,int> pos = getNextPosByDir(i, j, direction);
-
-	if (!inBounds(pos.first, pos.second))
-		return false;
-
-	Figure& figure = checker.getFigures()[pos.first][pos.second];
-	return (figure.getState() != FigureState::none && !figure.isPass() && figure.getSide() != startFigure.getSide());
-}
-
 int Interface::figureAnalisis(int i, int j, Direction direction, Figure& startFigure, 
                               bool isDrawing, bool isAttacking, int attackCount, AttackPath& currentPath,
                               AttackPath& bestPath, vector<pair<int, int>>& visitedPositions)
@@ -201,7 +203,7 @@ int Interface::figureAnalisis(int i, int j, Direction direction, Figure& startFi
       Direction::topLeft, Direction::bottomLeft
     };
   } else {
-    if (checker.isWhiteInDown()) {
+    if (isWhiteInDown()) {
       // Якщо вказана фігура - 'Piece'.
       if (startFigure.getSide() == FigureSide::white) {
         availableDirections = {Direction::topRight, Direction::topLeft};
@@ -417,7 +419,7 @@ void Interface::showPossibleMovesAndAttacks()
       Direction::topLeft, Direction::bottomLeft
     };
   } else {
-    if (checker.isWhiteInDown()) {
+    if (isWhiteInDown()) {
       // Якщо вказана фігура - 'Piece'.
       if (figure.getSide() == FigureSide::white) {
         availableDirections = {Direction::topRight, Direction::topLeft};
@@ -663,7 +665,7 @@ bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow,
     // Визначаємо доступні напрямки для атаки
     vector<Direction> availableDirections;
     
-    if (checker.isWhiteInDown()) {
+    if (isWhiteInDown()) {
       if (attacker.getSide() == FigureSide::white) {
         availableDirections = {Direction::topRight, Direction::topLeft};
       } else {
@@ -765,5 +767,40 @@ void Interface::drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, D
     
     currentRow = nextPos.first;
     currentCol = nextPos.second;
+  }
+}
+
+void Interface::whereWhiteSide() {
+  system("clear");
+  cout << endl << ((whiteInDown) ? "White side is down." : "White side is up.");
+  cout << endl << "[Press Enter to continue]" << endl;
+  cin.ignore();
+  cin.get();
+}
+
+void Interface::showMenu() {
+  while (true) {
+    clearTiles();
+    drowBoard("===== CHECKERS MENU =====");
+    cout << endl << "1. Analyze figure moves and attacks" << endl;
+    cout << "2. Analyze threats to figure" << endl;
+    cout << "3. Where is white side?" << endl;
+    cout << "4. Exit" << endl;
+    cout << endl << "Choice: ";
+    
+    int choice;
+    if (!(cin >> choice)) {
+      cin.clear();
+      cin.ignore();
+      cerr << "Invalid input! Please enter a number (1-3)." << endl;
+      continue;
+    }
+    
+    switch (choice) {
+      case 1: showPossibleMovesAndAttacks(); break;
+      case 2: showThreatsToFigure(); break;
+      case 3: whereWhiteSide(); break;
+      case 4: return;
+    }
   }
 }

@@ -7,15 +7,14 @@
 class CheckerBoard {
 	Figure **figures{nullptr};
 	Board **board{nullptr};
-	bool whiteInDown{true};
 
 public:
-	CheckerBoard(bool isWhiteInDown);
+	CheckerBoard();
 	~CheckerBoard();
 
 	Figure **getFigures() const { return figures; };
 	Board **getBoard() const { return board; }
-	bool isWhiteInDown() const { return whiteInDown; }
+
 	bool transformPosition(const std::string& pos, int& col, int& row) const;
 
 	// friend std::ostream& operator<<(std::ostream &out, CheckerBoard checker);

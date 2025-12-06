@@ -3,7 +3,7 @@
 #include "figure.hpp"
 #include "board.hpp"
 
-CheckerBoard::CheckerBoard(bool isWhiteInDown) : whiteInDown(isWhiteInDown)
+CheckerBoard::CheckerBoard()
 {
 	figures = new Figure*[8];
 	for (int i = 0; i < 8; i++) {
