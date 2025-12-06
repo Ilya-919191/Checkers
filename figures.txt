@@ -1,11 +1,12 @@
 white king B8
 black piece E5
 black piece E3
-black king G5
-black piece G7
-black king C1
+white king G5
+white piece G7
 black king A3
 black king C3
 black piece E1
-black king H6
 black piece G3
+white piece E7
+black piece C5
+black piece H4

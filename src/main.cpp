@@ -1,6 +1,5 @@
 #include <iostream>
 #include "checker_board.hpp"
-#include "checker_board.hpp"
 #include "interface.hpp"
 
 int main(void)
@@ -10,8 +9,8 @@ int main(void)
 
 	try {
 		interface.fillBoardFromFile("./figures.txt");
-		interface.drowBoard();
-		interface.showPossiblyAttack();
+		interface.showPossibleMovesAndAttacks();
+		interface.showThreatsToFigure();
 	} catch (const std::string err) {
 		std::cerr << err;
 	}

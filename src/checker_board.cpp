@@ -29,14 +29,17 @@ CheckerBoard::~CheckerBoard()
 	delete[] board;
 }
 
-void CheckerBoard::transformPosition(std::string position, int &col, int &row) {
-	if (position.length() != 2) {
-		throw "The position of figures must consist of one letter and one number. Example: A6";
-	}
-	col = position[0] - 'A';
-	row = position[1] - '1';
+bool CheckerBoard::transformPosition(const std::string& pos, int& col, int& row) const {
+    if (pos.length() < 2) return false;
+    
+    char colChar = std::toupper(pos[0]);
+    if (colChar < 'A' || colChar > 'H') return false;
+    
+    char rowChar = pos[1];
+    if (rowChar < '1' || rowChar > '8') return false;
+    
+    col = colChar - 'A';
+    row = rowChar - '1';
+    
+    return true;
 }
-
-// std::ostream& operator<<(std::ostream out, CheckerBoard checker) {
-
-// }

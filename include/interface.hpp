@@ -3,48 +3,56 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 #include "board.hpp"
 #include "checker_board.hpp"
-#include "checker_element.hpp"
 #include "figure.hpp"
 
 using namespace std;
 
 enum class Direction {
-	current,
+	none,
   topRight,
   bottomRight,
   bottomLeft,
   topLeft
 };
 
-class Interface {
-	const string colorWhite{"\033[097m"};
-	const string colorBlack{"\033[091m"};
-	const string colorBackgroundWhite{"\033[0107m "};
-	const string colorBackgroundBlack{"\033[040m "};
-	const string colorAttack{"\033[101m "};
-	const string colorActive{"\033[104m "};
-	const string colorFinish{"\033[102m "};
-	const string colorMove{"\033[103m "};
-	const string colorEnd{"\033[0m"};
+struct AttackPath {
+	std::vector<std::pair<int, int>> path;
+	std::vector<std::pair<int, int>> captured;
+	int attackCount{0};
+	
+	void addPosition(int i, int j);
+	void addCaptured(int i, int j);
+	bool isAlreadyCaptured(int i, int j) const;
+};
 
-	const string symbolPiece = "P"; // ⬤ P
-	const string symbolKing = "K"; // ◯ K
-
+class Interface
+{
 	CheckerBoard& checker;
 
-	pair<int, int> getPosByDir(int i, int j, Direction direction);
-	Figure& getFigureByDir(int i, int j, Direction direction);
+	void clearTiles();
+	pair<int, int> getNextPosByDir(int i, int j, Direction direction);
+	Figure& getNextFigureByDir(int i, int j, Direction direction);
 	void setBackgroudOfTile(int i, int j, TileMoment moment);
 	Direction reversDir(Direction direction);
 	bool checkFigureForAttack(int i, int j, Direction direction, Figure& startFigure);
-	int figureAnalisis(int i, int j, Direction direction, Figure& startFigure, bool isDrow, bool isAttacked = false, int sumAtk = 0);
+	int figureAnalisis(int i, int j, Direction direction, Figure& startFigure, bool isDrawing,
+		bool isAttacking, int attackCount, AttackPath& currentPath, AttackPath& bestPath, vector<pair<int, int>>& visitedPositions);
+	bool canAttackTarget(int attackerRow, int attackerCol, int targetRow, int targetCol, Figure& attacker);
+  void visualizeThreats(int targetRow, int targetCol, const vector<pair<string, pair<int, int>>>& threats);
+  Direction findAttackDirection(int fromRow, int fromCol, int toRow, int toCol);
+  void drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, Direction dir);
+
 public:
 	Interface(CheckerBoard& checkerBoard);
+
 	void fillBoardFromFile(std::string fileName);
-	void drowBoard();
-	void showPossiblyAttack();
+	void showPossibleMovesAndAttacks();
+	void drowBoard(string text = "");
+	void showWhoCanAttackFigure();
+	void showThreatsToFigure();
 };
 
 #endif // INTERFACE_HPP

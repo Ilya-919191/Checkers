@@ -15,8 +15,8 @@ public:
 
 	Figure **getFigures() const { return figures; };
 	Board **getBoard() const { return board; }
-	void transformPosition(std::string position, int &col, int &row);
 	bool isWhiteInDown() const { return whiteInDown; }
+	bool transformPosition(const std::string& pos, int& col, int& row) const;
 
 	// friend std::ostream& operator<<(std::ostream &out, CheckerBoard checker);
 };
