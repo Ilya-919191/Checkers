@@ -16,8 +16,6 @@ public:
 	Board **getBoard() const { return board; }
 
 	bool transformPosition(const std::string& pos, int& col, int& row) const;
-
-	// friend std::ostream& operator<<(std::ostream &out, CheckerBoard checker);
 };
 
 #endif // CHECKER_BOARD_HPP
