@@ -14,840 +14,452 @@
 
 using namespace std;
 
-void AttackPath::addPosition(int i, int j) {
-	path.push_back({i, j});
-}
-void AttackPath::addCaptured(int i, int j) {
-	captured.push_back({i, j});
-	attackCount++;
-}
-
+// AttackPath methods
+void AttackPath::addPosition(int i, int j) { path.push_back({i, j}); }
+void AttackPath::addCaptured(int i, int j) { captured.push_back({i, j}); attackCount++; }
 bool AttackPath::isAlreadyCaptured(int i, int j) const {
-	if (!captured.empty()) {
-		for (const pair<int, int>& cap : captured) {
-			if (cap.first == i && cap.second == j) {
-				return true;
-			}
-		}
-	}
-	return false;
+    for (const auto& cap : captured)
+        if (cap.first == i && cap.second == j) return true;
+    return false;
 }
 
+// Interface methods
 void Interface::setWhiteSide() {
-	int choice;
-	cout << "White side will be in down? (y/n): ";
-	cin >> choice;
-
-  if (choice == 'y') {
-    whiteInDown = true; // Білі внизу
-  } else {
-    whiteInDown = false; // Білі вгорі
-  }
+    cout << "White side will be in down? (y/n): ";
+    whiteInDown = (cin.get() == 'y');
+    cin.ignore();
 }
 
 Interface::Interface(CheckerBoard& checkerBoard) : checker(checkerBoard) {}
 
-void Interface::fillBoardFromFile(std::string fileName) {
-	std::ifstream file(fileName);
-	if (!file.is_open())
-		throw "File was not open.";
+void Interface::fillBoardFromFile(string fileName) {
+    ifstream file(fileName);
+    if (!file.is_open()) throw "File was not open.";
 
-	std::string sideStr, stateStr, position;
-	while (file >> sideStr >> stateStr >> position) {
-		Figure figure;
+    string sideStr, stateStr, position;
+    while (file >> sideStr >> stateStr >> position) {
+        Figure figure;
+        figure.setSide(sideStr == "white" ? FigureSide::white : FigureSide::black);
+        figure.setState(stateStr == "piece" ? FigureState::piece : FigureState::king);
+        figure.setSymbol(format("{}{}{}", 
+            figure.getSide() == FigureSide::white ? colorWhite : colorBlack,
+            figure.getState() == FigureState::piece ? symbolPiece : symbolKing,
+            colorEnd));
+        figure.setPosition(position);
+        checker.getFigures()[figure.getX()][figure.getY()] = figure;
+    }
 
-		FigureSide side = (sideStr == "white") ? FigureSide::white : FigureSide::black;
-		figure.setSide(side);
-
-		FigureState state = (stateStr == "piece") ? FigureState::piece : FigureState::king;
-		figure.setState(state);
-
-		std::string color = (side == FigureSide::white) ? colorWhite : colorBlack;
-		std::string symbol = (state == FigureState::piece) ? symbolPiece : symbolKing;
-
-		figure.setSymbol(format("{}{}{}", color, symbol, colorEnd));
-		figure.setPosition(position);
-		checker.getFigures()[figure.getX()][figure.getY()] = figure;
-	}
-
-	for (int i = 0; i < 8; i++) {
-		for (int j = 0; j < 8; j++) {
-			Board **board = checker.getBoard();
-			Figure **figures = checker.getFigures();
-
-			board[i][j].setSymbol(((i + j) % 2 != 0 ) ? colorBackgroundWhite : colorBackgroundBlack);
-
-			if (board[i][j].getTile() == TileMoment::none) {
-				board[i][j].setPositionByNums(i, j);
-				figures[i][j].setPositionByNums(i, j);
-			}
-		}
-
-	}
+    for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++) {
+            checker.getBoard()[i][j].setSymbol(((i + j) % 2 != 0) ? colorBackgroundWhite : colorBackgroundBlack);
+            if (checker.getBoard()[i][j].getTile() == TileMoment::none) {
+                checker.getBoard()[i][j].setPositionByNums(i, j);
+                checker.getFigures()[i][j].setPositionByNums(i, j);
+            }
+        }
 }
 
 void Interface::clearTiles() {
-  // Очищаємо всі позначки
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      setBackgroudOfTile(i, j, TileMoment::none);
+    for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+            setBackgroudOfTile(i, j, TileMoment::none);
+}
+
+void Interface::drowBoard(string text) {
+    CLS();
+    cout << text << "\n\n";
+    for (int i = 7; i >= 0; i--) {
+        cout << "\033[092m " << i + 1 << " " << colorEnd;
+        for (int j = 0; j < 8; j++)
+            cout << checker.getBoard()[i][j].getSymbol() << 
+                    checker.getFigures()[i][j].getSymbol() << 
+                    checker.getBoard()[i][j].getSymbol() << colorEnd;
+        cout << endl;
     }
-  }
+    cout << "\033[092m    ";
+    for (char j = 'A'; j < 'I'; j++) cout << j << "  ";
+    cout << "\033[0m\n";
 }
 
-void Interface::drowBoard(string text)
-{
-	CLS();
-  cout << text << endl << endl;
+bool inBounds(int i, int j) { return i >= 0 && i < 8 && j >= 0 && j < 8; }
 
-	for (int i = 7; i >= 0; i--)
-	{
-		cout << "\033[092m " << i + 1 << " " << colorEnd;
-		for (int j = 0; j < 8; j++) {
-			const string background = checker.getBoard()[i][j].getSymbol();
-			const string figure = checker.getFigures()[i][j].getSymbol();
-
-			cout << background << figure << background << colorEnd;
-		}
-		cout << endl;
-	}
-	cout << "\033[092m    ";
-	for (char j = 'A'; j < 'I'; j++)
-		cout << j << "  ";
-	cout << "\033[0m\n";
-}
-
-inline bool inBounds(int i, int j) {
-	return i >= 0 && i < 8 && j >= 0 && j < 8;
-}
-
-inline bool onBorder(int i, int j) {
-	return (i == 0 && j == 0) || (i == 7 && j == 7) || (i == 0 && j == 6)
-		|| (i == 1 && j == 7) || (i == 6 && j == 0) || (i == 7 && j == 1);
-}
-
-Direction Interface::reversDir(Direction direction) {
-	switch (direction) {
-		case Direction::topRight:    return Direction::bottomLeft;
-		case Direction::bottomRight: return Direction::topLeft;
-		case Direction::topLeft:     return Direction::bottomRight;
-		case Direction::bottomLeft:  return Direction::topRight;
-		default:                     return Direction::none;
-	}
-}
-
-pair<int,int> Interface::getNextPosByDir(int i, int j, Direction direction) {
-	switch (direction) {
-		case Direction::topRight:    return {i + 1, j + 1};
-		case Direction::bottomRight: return {i - 1, j + 1};
-		case Direction::topLeft:     return {i + 1, j - 1};
-		case Direction::bottomLeft:  return {i - 1, j - 1};
-		default:                     return {-1, -1};
-	}
-}
-
-Figure& Interface::getNextFigureByDir(int i, int j, Direction direction) {
-	pair<int,int> pos = getNextPosByDir(i, j, direction);
-
-	static Figure empty;
-	if (!inBounds(pos.first, pos.second))
-		return empty;
-
-	return checker.getFigures()[pos.first][pos.second];
-}
-
-void Interface::setBackgroudOfTile(int i, int j, TileMoment moment) {
-	if (!inBounds(i, j)) return;
-
-	if (moment == TileMoment::attack)
-		checker.getBoard()[i][j].setSymbol(colorAttack);
-	else if (moment == TileMoment::active)
-		checker.getBoard()[i][j].setSymbol(colorActive);
-	else if (moment == TileMoment::move)
-		checker.getBoard()[i][j].setSymbol(colorMove);
-	else if (moment == TileMoment::finish)
-		checker.getBoard()[i][j].setSymbol(colorFinish);
-	else if (moment == TileMoment::none)
-		checker.getBoard()[i][j].setSymbol( ((i + j) % 2 != 0 ) ? colorBackgroundWhite : colorBackgroundBlack);
-
-	checker.getBoard()[i][j].setTile(moment);
-}
-
-int Interface::figureAnalisis(int i, int j, Direction direction, Figure& startFigure, 
-                              bool isDrawing, bool isAttacking, int attackCount, AttackPath& currentPath,
-                              AttackPath& bestPath, vector<pair<int, int>>& visitedPositions)
-{
-  // Якщо клітка вийшла за межі поля.
-  if (!inBounds(i, j)) return attackCount;
-  
-  // Перевіряємо, чи вже відвідували цю позицію на поточному шляху
-  if (find(visitedPositions.begin(), visitedPositions.end(), make_pair(i, j)) != visitedPositions.end()) {
-    return attackCount; // Якщо вже відвідували - повертаємось
-  }
-  
-  // Додаємо поточну позицію до відвіданих
-  visitedPositions.push_back({i, j});
-  
-  // ВАЖЛИВО: Завжди додаємо позицію до поточного шляху!
-  currentPath.addPosition(i, j);
-  
-  // Поточна фігура.
-  Figure& currentFigure = checker.getFigures()[i][j];
-
-  // Визначаємо доступні напрямки залежно від типу фігури.
-  vector<Direction> availableDirections;
-  
-  // Якщо вказана фігура - 'King'.
-  if (startFigure.getState() == FigureState::king) {
-    availableDirections = {
-      Direction::topRight, Direction::bottomRight, 
-      Direction::topLeft, Direction::bottomLeft
-    };
-  } else {
-    if (isWhiteInDown()) {
-      // Якщо вказана фігура - 'Piece'.
-      if (startFigure.getSide() == FigureSide::white) {
-        availableDirections = {Direction::topRight, Direction::topLeft};
-      } else {
-        availableDirections = {Direction::bottomRight, Direction::bottomLeft};
-      }
-    } else {
-      if (startFigure.getSide() == FigureSide::white) {
-        availableDirections = {Direction::bottomRight, Direction::bottomLeft};
-      } else {
-        availableDirections = {Direction::topRight, Direction::topLeft};
-      }
+Direction Interface::reversDir(Direction d) {
+    switch (d) {
+        case Direction::topRight: return Direction::bottomLeft;
+        case Direction::bottomRight: return Direction::topLeft;
+        case Direction::topLeft: return Direction::bottomRight;
+        case Direction::bottomLeft: return Direction::topRight;
+        default: return Direction::none;
     }
-  }
-  
-  //=== Якщо це перший виклик.
-  if (direction == Direction::none)
-  {
-    int maxResult = 0;
-    AttackPath localBestPath = currentPath;
-    
-    // Збираємо результати для всіх доступних напрямків.
-    for (Direction newDir : availableDirections)
-    {
-      // Позиція наступної фігури.
-      pair<int, int> nextPos = getNextPosByDir(i, j, newDir);
-      if (inBounds(nextPos.first, nextPos.second))
-      {
-        // Копіюємо відвідані позиції для кожного нового шляху
-        vector<pair<int, int>> newVisited = visitedPositions;
-        
-        // Створюємо новий шлях для цього напрямку.
-        AttackPath newPath = currentPath;
-        int result = figureAnalisis(nextPos.first, nextPos.second, newDir, 
-          startFigure, isDrawing, false, 0, newPath, bestPath, newVisited);
-        
-        if (result > maxResult) {
-          maxResult = result;
-          localBestPath = newPath;
-          
-          // Оновлюємо глобальний найкращий шлях
-          if (result > bestPath.attackCount) {
-            bestPath = newPath; // Копіюємо ВЕСЬ шлях
-          }
-        }
-      }
-    } 
-    
-    // Видаляємо поточну позицію з відвіданих перед поверненням
-    visitedPositions.pop_back();
-    
-    return maxResult;
-  }
+}
 
-  //=== Якщо клітка порожня.
-  if (currentFigure.getState() == FigureState::none)
-  {   
-    // Якщо фігура ще не атакувала - рухаємось по тій же діагоналі.
-    if (!isAttacking) {
-      pair<int, int> nextPos = getNextPosByDir(i, j, direction);
-      
-      // Видаляємо поточну позицію з відвіданих перед переходом
-      visitedPositions.pop_back();
-      
-      return figureAnalisis(nextPos.first, nextPos.second, direction, 
-        startFigure, isDrawing, false, attackCount, currentPath, bestPath, visitedPositions);
+pair<int,int> Interface::getNextPosByDir(int i, int j, Direction d) {
+    switch (d) {
+        case Direction::topRight: return {i + 1, j + 1};
+        case Direction::bottomRight: return {i - 1, j + 1};
+        case Direction::topLeft: return {i + 1, j - 1};
+        case Direction::bottomLeft: return {i - 1, j - 1};
+        default: return {-1, -1};
     }
-    // Якщо актака вже відбувалась - пошук наступної.
-    else {
-      int maxNextAttacks = attackCount;
-      
-      for (Direction newDir : availableDirections)
-      {
-        // Пропускаємо напрямок, з якого ми прийшли.
-        if (newDir == reversDir(direction)) continue;
-                    
-        // Перевіряємо, чи є клітка із ворожою фігурою за напрямком.
-        pair<int, int> enemyPos = getNextPosByDir(i, j, newDir);
-        if (!inBounds(enemyPos.first, enemyPos.second)) continue;
-        
-        // Ворожа фігура.
-        Figure& enemyFigure = checker.getFigures()[enemyPos.first][enemyPos.second];
-      
-        // Перевіряємо, чи це ворожа фігура і чи ще не захоплена на цьому шляху.
-        if (enemyFigure.getState() != FigureState::none && enemyFigure.getSide() != startFigure.getSide() &&
-          !currentPath.isAlreadyCaptured(enemyPos.first, enemyPos.second))
-        {
-          // Перевіряємо, чи є пуста клітка за ворожою фігурою.
-          pair<int, int> behindPos = getNextPosByDir(enemyPos.first, enemyPos.second, newDir);
-          if (!inBounds(behindPos.first, behindPos.second)) continue;
-  
-          // Фігура за ворожою.
-          Figure& behindFigure = checker.getFigures()[behindPos.first][behindPos.second];
-          if (behindFigure.getState() == FigureState::none)
-          {
-            // Копіюємо відвідані позиції для нового шляху
-            vector<pair<int, int>> newVisited = visitedPositions;
-            
-            // Додаємо захоплену фігуру до шляху.
-            AttackPath newPath = currentPath;
-            newPath.addCaptured(enemyPos.first, enemyPos.second);
-            
-            // Продовжуємо рекурсію з нової позиції.
-            int newAttackCount = figureAnalisis(behindPos.first, behindPos.second, newDir,
-              startFigure, isDrawing, true, attackCount + 1, newPath, bestPath, newVisited);
-            
-            // Оновлюємо кращий шлях.
-            if (newAttackCount > maxNextAttacks) {
-              maxNextAttacks = newAttackCount;
+}
 
-              if (newAttackCount > bestPath.attackCount) {
-                bestPath = newPath; // Копіюємо ВЕСЬ шлях
-              }
+void Interface::setBackgroudOfTile(int i, int j, TileMoment m) {
+    if (!inBounds(i, j)) return;
+    string color;
+    if (m == TileMoment::attack) color = colorAttack;
+    else if (m == TileMoment::active) color = colorActive;
+    else if (m == TileMoment::move) color = colorMove;
+    else if (m == TileMoment::finish) color = colorFinish;
+    else color = ((i + j) % 2 != 0) ? colorBackgroundWhite : colorBackgroundBlack;
+    checker.getBoard()[i][j].setSymbol(color);
+    checker.getBoard()[i][j].setTile(m);
+}
+
+// Helper function to get available directions
+vector<Direction> getDirections(Figure& figure, bool whiteDown) {
+    if (figure.getState() == FigureState::king)
+        return {Direction::topRight, Direction::bottomRight, Direction::topLeft, Direction::bottomLeft};
+    
+    bool isWhite = figure.getSide() == FigureSide::white;
+    if (whiteDown) 
+        return isWhite ? vector{Direction::topRight, Direction::topLeft} : 
+                         vector{Direction::bottomRight, Direction::bottomLeft};
+    else 
+        return isWhite ? vector{Direction::bottomRight, Direction::bottomLeft} : 
+                         vector{Direction::topRight, Direction::topLeft};
+}
+
+int Interface::figureAnalisis(int i, int j, Direction dir, Figure& startFigure, 
+                              bool drawing, bool attacking, int attackCount, 
+                              AttackPath& curPath, AttackPath& bestPath,
+                              vector<pair<int, int>>& visited) {
+    if (!inBounds(i, j)) return attackCount;
+    if (find(visited.begin(), visited.end(), make_pair(i, j)) != visited.end()) return attackCount;
+    
+    visited.push_back({i, j});
+    curPath.addPosition(i, j);
+    Figure& curFig = checker.getFigures()[i][j];
+    vector<Direction> dirs = getDirections(startFigure, whiteInDown);
+    
+    if (dir == Direction::none) {
+        int maxResult = 0;
+        AttackPath localBest = curPath;
+        for (Direction d : dirs) {
+            auto next = getNextPosByDir(i, j, d);
+            if (!inBounds(next.first, next.second)) continue;
+            vector<pair<int, int>> newVisited = visited;
+            AttackPath newPath = curPath;
+            int result = figureAnalisis(next.first, next.second, d, startFigure, 
+                                       drawing, false, 0, newPath, bestPath, newVisited);
+            if (result > maxResult) {
+                maxResult = result;
+                localBest = newPath;
+                if (result > bestPath.attackCount) bestPath = newPath;
             }
-          }
         }
-      }
-      // Видаляємо поточну позицію з відвіданих перед поверненням.
-      visitedPositions.pop_back();
-      
-      return maxNextAttacks;
+        visited.pop_back();
+        return maxResult;
     }
-  }
-
-  //=== Якщо клітка містить фігуру.
-  else {
-    // Якщо це наша фігура - зупиняємось.
-    if (currentFigure.getSide() == startFigure.getSide()) {
-      visitedPositions.pop_back();
-      return attackCount;
-    }
-    // Якщо це ворожа фігура і ми ще не атакували.
-    else if (!isAttacking)
-    {
-      // Перевіряємо, чи можемо атакувати цю фігуру.
-      pair<int, int> behindPos = getNextPosByDir(i, j, direction);
-      if (!inBounds(behindPos.first, behindPos.second)) {
-        visitedPositions.pop_back();
+    
+    if (curFig.getState() == FigureState::none) {
+        if (!attacking) {
+            auto next = getNextPosByDir(i, j, dir);
+            visited.pop_back();
+            return figureAnalisis(next.first, next.second, dir, startFigure, 
+                                 drawing, false, attackCount, curPath, bestPath, visited);
+        } else {
+            int maxNext = attackCount;
+            for (Direction d : dirs) {
+                if (d == reversDir(dir)) continue;
+                auto enemyPos = getNextPosByDir(i, j, d);
+                if (!inBounds(enemyPos.first, enemyPos.second)) continue;
+                Figure& enemy = checker.getFigures()[enemyPos.first][enemyPos.second];
+                if (enemy.getState() != FigureState::none && 
+                    enemy.getSide() != startFigure.getSide() &&
+                    !curPath.isAlreadyCaptured(enemyPos.first, enemyPos.second)) {
+                    auto behind = getNextPosByDir(enemyPos.first, enemyPos.second, d);
+                    if (!inBounds(behind.first, behind.second)) continue;
+                    if (checker.getFigures()[behind.first][behind.second].getState() == FigureState::none) {
+                        vector<pair<int, int>> newVisited = visited;
+                        AttackPath newPath = curPath;
+                        newPath.addCaptured(enemyPos.first, enemyPos.second);
+                        int result = figureAnalisis(behind.first, behind.second, d,
+                                                   startFigure, drawing, true, 
+                                                   attackCount + 1, newPath, bestPath, newVisited);
+                        if (result > maxNext) {
+                            maxNext = result;
+                            if (result > bestPath.attackCount) bestPath = newPath;
+                        }
+                    }
+                }
+            }
+            visited.pop_back();
+            return maxNext;
+        }
+    } else {
+        if (curFig.getSide() == startFigure.getSide()) {
+            visited.pop_back();
+            return attackCount;
+        } else if (!attacking) {
+            auto behind = getNextPosByDir(i, j, dir);
+            if (!inBounds(behind.first, behind.second)) {
+                visited.pop_back();
+                return attackCount;
+            }
+            if (checker.getFigures()[behind.first][behind.second].getState() == FigureState::none) {
+                vector<pair<int, int>> newVisited = visited;
+                AttackPath newPath = curPath;
+                newPath.addCaptured(i, j);
+                int result = figureAnalisis(behind.first, behind.second, dir,
+                                           startFigure, drawing, true, 
+                                           attackCount + 1, newPath, bestPath, newVisited);
+                if (result > bestPath.attackCount) bestPath = newPath;
+                visited.pop_back();
+                return result;
+            }
+        }
+        visited.pop_back();
         return attackCount;
-      }
-      
-      Figure& behindFigure = checker.getFigures()[behindPos.first][behindPos.second];
-          
-      // Перевіряємо, чи пуста клітка за ворожою фігурою.
-      if (behindFigure.getState() == FigureState::none)
-      {
-        // Копіюємо відвідані позиції для нового шляху
-        vector<pair<int, int>> newVisited = visitedPositions;
-        
-        // Додаємо захоплену фігуру до шляху.
-        AttackPath newPath = currentPath;
-        newPath.addCaptured(i, j);
-        
-        // Продовжуємо рекурсію з нової позиції.
-        int result = figureAnalisis(behindPos.first, behindPos.second, direction, startFigure,
-          isDrawing, true, attackCount + 1, newPath, bestPath, newVisited);
-          
-        // Оновлюємо кращий шлях.
-        if (result > bestPath.attackCount) {
-          bestPath = newPath; // Копіюємо ВЕСЬ шлях
-        }
-        
-        // Видаляємо поточну позицію з відвіданих перед поверненням
-        visitedPositions.pop_back();
-        
-        return result;
-      }
     }
-    // Якщо це ворожа фігура і ми вже атакуємо - не можна стрибати через дві фігури поспіль.
-    else {
-      visitedPositions.pop_back();
-      return attackCount;
-    }
-  }
-
-  // Запасний вихід
-  visitedPositions.pop_back();
-  return attackCount;
+    visited.pop_back();
+    return attackCount;
 }
 
-void Interface::showPossibleMovesAndAttacks()
-{
-  const string nameSection = "===== MOVES AND ATTACKS =====";
-  drowBoard(nameSection);
-
-  string selectPos;
-  cout << endl << "Enter position (e.g., C6): ";
-  cin >> selectPos;
-  
-  int row = 0, col = 0;
-  if (!checker.transformPosition(selectPos, col, row)) {
-    throw "Invalid position!";
-  }
-  Figure& figure = checker.getFigures()[row][col];
-
-  AttackPath emptyPath;
-  AttackPath bestPath;
-  vector<pair<int, int>> visitedPositions;
-
-  // Додаємо стартову позицію до порожнього шляху
-  emptyPath.addPosition(row, col);
-
-  int maxAttacks = figureAnalisis(row, col, Direction::none, figure, 
-                                  false, false, 0, emptyPath,
-                                  bestPath, visitedPositions);
-
-  vector<Direction> availableDirections;
-
-  // Якщо вказана фігура - 'King'.
-  if (figure.getState() == FigureState::king) {
-    availableDirections = {
-      Direction::topRight, Direction::bottomRight, 
-      Direction::topLeft, Direction::bottomLeft
-    };
-  } else {
-    if (isWhiteInDown()) {
-      // Якщо вказана фігура - 'Piece'.
-      if (figure.getSide() == FigureSide::white) {
-        availableDirections = {Direction::topRight, Direction::topLeft};
-      } else {
-        availableDirections = {Direction::bottomRight, Direction::bottomLeft};
-      }
+void Interface::showPossibleMovesAndAttacks() {
+    drowBoard("===== MOVES AND ATTACKS =====");
+    cout << "\nEnter position (e.g., C6): ";
+    string selectPos; cin >> selectPos;
+    
+    int row, col;
+    if (!checker.transformPosition(selectPos, col, row)) throw "Invalid position!";
+    Figure& figure = checker.getFigures()[row][col];
+    
+    AttackPath emptyPath, bestPath;
+    vector<pair<int, int>> visited;
+    emptyPath.addPosition(row, col);
+    int maxAttacks = figureAnalisis(row, col, Direction::none, figure, false, false, 0, emptyPath, bestPath, visited);
+    
+    if (maxAttacks > 0) {
+        clearTiles();
+        setBackgroudOfTile(row, col, TileMoment::active);
+        for (const auto& cap : bestPath.captured) setBackgroudOfTile(cap.first, cap.second, TileMoment::attack);
+        for (const auto& pt : bestPath.path) {
+            bool isCap = false;
+            for (const auto& cap : bestPath.captured)
+                if (cap.first == pt.first && cap.second == pt.second) { isCap = true; break; }
+            if (!isCap && !(pt.first == row && pt.second == col))
+                setBackgroudOfTile(pt.first, pt.second, TileMoment::move);
+        }
+        drowBoard("===== MOVES AND ATTACKS =====");
+        
+        string color = (figure.getSide() == FigureSide::white) ? "White" : "Black";
+        string type = (figure.getState() == FigureState::piece) ? "piece" : "king";
+        cout << "\n" << color << " " << type << " at " << selectPos << " threatens:\n";
+        for (const auto& cap : bestPath.captured) {
+            char colChar = 'A' + cap.second;
+            int rowNum = cap.first + 1;
+            Figure& threatened = checker.getFigures()[cap.first][cap.second];
+            string tColor = (threatened.getSide() == FigureSide::white) ? "white" : "black";
+            string tType = (threatened.getState() == FigureState::piece) ? "piece" : "king";
+            cout << "  - " << tColor << " " << tType << " at " << colChar << rowNum << endl;
+        }
+        cout << "\nAttack path: ";
+        for (size_t i = 1; i < bestPath.path.size(); i++) {
+            cout << char('A' + bestPath.path[i].second) << bestPath.path[i].first + 1;
+            if (i < bestPath.path.size() - 1) cout << " -> ";
+        }
+        if (maxAttacks > 1) cout << "\n" << maxAttacks << " figures can be captured in one turn.";
     } else {
-      if (figure.getSide() == FigureSide::white) {
-        availableDirections = {Direction::bottomRight, Direction::bottomLeft};
-      } else {
-        availableDirections = {Direction::topRight, Direction::topLeft};
-      }
-    }
-  }
-  
-  if (maxAttacks > 0) {
-    clearTiles();
-    
-    // Відрисовка початкової позиції.
-    setBackgroudOfTile(row, col, TileMoment::active);
-    
-    // Позначаємо захоплені фігури.
-    for (const auto& cap : bestPath.captured) {
-      setBackgroudOfTile(cap.first, cap.second, TileMoment::attack);
-    }
-    
-    // Позначаємо шлях переміщення.
-    for (const auto& pt : bestPath.path) {
-      int pathRow = pt.first;
-      int pathCol = pt.second;
-      
-      // Перевіряємо, чи це не початкова позиція і не захоплена фігура.
-      bool isCaptured = false;
-      for (const auto& cap : bestPath.captured) {
-        if (cap.first == pathRow && cap.second == pathCol) {
-          isCaptured = true;
-          break;
-        }
-      }
-      
-      if (!isCaptured && !(pathRow == row && pathCol == col)) {
-        setBackgroudOfTile(pathRow, pathCol, TileMoment::move);
-      }
-    }
-    
-    drowBoard(nameSection);
-    
-    // Виводить інформацію про захоплені фігури.
-    string color = (figure.getSide() == FigureSide::white) ? "White" : "Black";
-    string type = (figure.getState() == FigureState::piece) ? "piece" : "king";
-  
-    cout << endl << color << " " << type << " at " << selectPos << " threatens:" << endl;
-    for (const auto& cap : bestPath.captured)
-    {
-      // Вказанні позицій захоплених фігур.
-      char colChar = 'A' + cap.second;
-      int rowNum = cap.first + 1;
-
-      Figure& threatened = checker.getFigures()[cap.first][cap.second];
-      string threatColor = (threatened.getSide() == FigureSide::white) ? "white" : "black";
-      string threatType = (threatened.getState() == FigureState::piece) ? "piece" : "king";
-      
-      cout << "  - " << threatColor << " " << threatType << " at " << colChar << rowNum << endl;
-    }
-    
-    cout << "\nAttack path: ";
-    for (size_t i = 1; i < bestPath.path.size(); i++) {
-      char colChar = 'A' + bestPath.path[i].second;
-      int rowNum = bestPath.path[i].first + 1;
-      
-      cout << colChar << rowNum;
-      if (i < bestPath.path.size() - 1) cout << " -> ";
-    }
-    cout << endl;
-    
-    if (maxAttacks > 1) {
-      cout << endl << maxAttacks << " figures can be captured in one turn." << endl;
-    }
-    
-  } else {
-    cout << "No attacks possible from this position." << endl;
-    
-    // Очищаємо всі позначки
-    for (int i = 0; i < 8; i++) {
-      for (int j = 0; j < 8; j++) {
-        setBackgroudOfTile(i, j, TileMoment::none);
-      }
-    }
-    
-    // Тоді позначаємо можливі її варіації ходів.
-    setBackgroudOfTile(row, col, TileMoment::active);
-
-    bool hasMoves = false;
-    for (Direction newDir : availableDirections) {
-      pair<int, int> nextPos = getNextPosByDir(row, col, newDir);
-      if (inBounds(nextPos.first, nextPos.second)) {
-        Figure& nextFigure = checker.getFigures()[nextPos.first][nextPos.second];
-        if (nextFigure.getState() == FigureState::none) {
-          setBackgroudOfTile(nextPos.first, nextPos.second, TileMoment::move);
-          hasMoves = true;
-        }
-      }
-    }
-    
-    if (hasMoves) {
-      drowBoard();
-      cout << "Simple moves are available." << endl;
-    } else {
-      drowBoard();
-      cout << "No moves available from this position." << endl;
-    }
-  }
-  
-  cout << endl << "[Press Enter to continue]" << endl;
-  cin.ignore();
-  cin.get();
-  return;
-}
-
-void Interface::showThreatsToFigure()
-{
-  clearTiles();
-
-  const string nameSection = "===== THREATS TO FIGURE =====";
-  drowBoard(nameSection);
-
-  string selectPos;
-  cout << endl << "Enter position (e.g., C6): ";
-  cin >> selectPos;
-  
-  int row = 0, col = 0;
-  if (!checker.transformPosition(selectPos, col, row)) {
-    throw "Invalid position!";
-  }
-
-  vector<pair<string, pair<int, int>>> threateningFigures;
-  Figure& targetFigure = checker.getFigures()[row][col];
-
-  // Перевіряємо всі фігури на дошці.
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      Figure& potentialThreat = checker.getFigures()[i][j];
-      
-      // Пропускаємо порожні клітини та фігури того ж кольору.
-      if (potentialThreat.getState() == FigureState::none) continue;
-      if (potentialThreat.getSide() == targetFigure.getSide()) continue;
-      
-      // Перевіряємо чи може ця фігура атакувати цільову фігуру.
-      if (canAttackTarget(i, j, row, col, potentialThreat)) {
-        char colChar = 'A' + j;
-        int rowNum = i + 1;
-        string pos = string(1, colChar) + to_string(rowNum);
-        
-        string threatColor = (potentialThreat.getSide() == FigureSide::white) ? "White" : "Black";
-        string threatType = (potentialThreat.getState() == FigureState::piece) ? "piece" : "king";
-        
-        threateningFigures.push_back({threatColor + " " + threatType + " at " + pos, {i, j}});
-      }
-    }
-  }
-
-  // Візуалізуємо загрози на дошці.
-  visualizeThreats(row, col, threateningFigures);
-  drowBoard(nameSection);
-  
-  // Перевіряємо, чи є фігура на цій позиції.
-  if (targetFigure.getState() == FigureState::none) {
-    cerr << "No figure at position " << selectPos << "!" << endl;
-    cin.ignore();
-    cin.get();
-    return;
-  }
-  
-  string color = (targetFigure.getSide() == FigureSide::white) ? "White" : "Black";
-  string type = (targetFigure.getState() == FigureState::piece) ? "piece" : "king";
-
-  cout << endl << color << " " << type << " at " << selectPos  << endl;
-
-  if (!threateningFigures.empty()) {
-    cout << "\nThis figure is threatened by " << threateningFigures.size() << " opponent figures:" << endl;
-    for (const auto& threat : threateningFigures) {
-      cout << "  - " << threat.first << endl;
-    }
-  } else {
-    drowBoard(nameSection);
-    cout << endl << "This figure is not under direct threat from any opponent figures." << endl;
-  }
-  
-  cout << endl << "[Press Enter to continue]" << endl;
-  cin.ignore();
-  cin.get();
-}
-
-void Interface::showThreatsToAllFigures()
-{
-  clearTiles();
-
-  const string nameSection = "===== THREATS TO ALL FIGURES =====";
-  drowBoard(nameSection);
-
-  string selectSide;
-  cout << endl << "Enter side [white/black] (w/b): ";
-  if (!(cin >> selectSide) || (selectSide != "w" && selectSide != "white" && selectSide != "b" && selectSide != "black")) {
-    throw "Invalid side!";
-  }
-
-  FigureSide side = (selectSide == "w" || selectSide == "white") ? FigureSide::white : FigureSide::black;
-
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      Figure& figureOfSide = checker.getFigures()[i][j];
-      vector<pair<string, pair<int, int>>> threateningFigures;
-
-      if (figureOfSide.getSide() == side) {
-        // Перевіряємо всі фігури на дошці.
-        for (int ti = 0; ti < 8; ti++) {
-          for (int tj = 0; tj < 8; tj++) {
-            Figure& potentialThreat = checker.getFigures()[ti][tj];
-            
-            // Пропускаємо порожні клітини та фігури того ж кольору.
-            if (potentialThreat.getState() == FigureState::none) continue;
-            if (potentialThreat.getSide() == figureOfSide.getSide()) continue;
-            
-            // Перевіряємо чи може ця фігура атакувати цільову фігуру.
-            if (canAttackTarget(ti, tj, i, j, potentialThreat)) {
-              threateningFigures.push_back({"", {ti, tj}});
+        cout << "No attacks possible from this position.";
+        clearTiles();
+        setBackgroudOfTile(row, col, TileMoment::active);
+        vector<Direction> dirs = getDirections(figure, whiteInDown);
+        bool hasMoves = false;
+        for (Direction d : dirs) {
+            auto next = getNextPosByDir(row, col, d);
+            if (inBounds(next.first, next.second) && 
+                checker.getFigures()[next.first][next.second].getState() == FigureState::none) {
+                setBackgroudOfTile(next.first, next.second, TileMoment::move);
+                hasMoves = true;
             }
-
-            visualizeThreats(ti, tj, threateningFigures, false);
-          }
         }
-      }
+        drowBoard();
+        cout << (hasMoves ? "Simple moves are available." : "No moves available from this position.");
     }
-  }
-  drowBoard(nameSection);
-  
-  cout << endl << "[Press eny key to continue]" << endl;
-  cin.ignore();
-  cin.get();
+    cout << "\n\n[Press Enter to continue]";
+    cin.ignore(); cin.get();
 }
 
-bool Interface::canAttackTarget(int attackerRow, int attackerCol, int targetRow, int targetCol, Figure& attacker)
-{
-  // Якщо атакуюча фігура - король.
-  if (attacker.getState() == FigureState::king) {
-    // Король може атакувати з будь-якого напрямку.
-    Direction directions[4] = {
-      Direction::topRight, Direction::bottomRight, 
-      Direction::topLeft, Direction::bottomLeft
-    };
+void Interface::showThreatsToFigure() {
+    clearTiles();
+    drowBoard("===== THREATS TO FIGURE =====");
+    cout << "\nEnter position (e.g., C6): ";
+    string selectPos; cin >> selectPos;
     
-    for (Direction dir : directions) {
-      // Перевіряємо чи є цільова фігура в цьому напрямку.
-      int checkRow = attackerRow;
-      int checkCol = attackerCol;
-
-      while (inBounds(checkRow, checkCol)) {
-        pair<int, int> nextPos = getNextPosByDir(checkRow, checkCol, dir);
-        if (!inBounds(nextPos.first, nextPos.second)) break;
+    int row, col;
+    if (!checker.transformPosition(selectPos, col, row)) throw "Invalid position!";
+    Figure& target = checker.getFigures()[row][col];
+    
+    vector<pair<string, pair<int, int>>> threats;
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            Figure& potential = checker.getFigures()[i][j];
+            if (potential.getState() == FigureState::none) continue;
+            if (potential.getSide() == target.getSide()) continue;
+            if (canAttackTarget(i, j, row, col, potential)) {
+                char colChar = 'A' + j;
+                string threatColor = (potential.getSide() == FigureSide::white) ? "White" : "Black";
+                string threatType = (potential.getState() == FigureState::piece) ? "piece" : "king";
         
-        Figure& nextFigure = checker.getFigures()[nextPos.first][nextPos.second];
-        
-        // Якщо знайшли цільову фігуру.
-        if (nextPos.first == targetRow && nextPos.second == targetCol) {
-          // Перевіряємо чи є вільна клітка за нею.
-          pair<int, int> behindPos = getNextPosByDir(targetRow, targetCol, dir);
-          if (!inBounds(behindPos.first, behindPos.second)) break;
-          
-          Figure& behindFigure = checker.getFigures()[behindPos.first][behindPos.second];
-          if (behindFigure.getState() == FigureState::none) {
-            return true;
-          }
-          break;
+                threats.push_back({threatColor + " " + threatType + " at " + colChar, {i, j}});
+            }
         }
-        
-        // Якщо зустріли іншу фігуру - не можемо атакувати через неї.
-        if (nextFigure.getState() != FigureState::none) {
-          break;
-        }
-        
-        checkRow = nextPos.first;
-        checkCol = nextPos.second;
-      }
     }
-  } 
-  // Якщо атакуюча фігура - звичайна шашка.
-  else {
-    // Визначаємо доступні напрямки для атаки.
-    vector<Direction> availableDirections;
     
-    if (isWhiteInDown()) {
-      if (attacker.getSide() == FigureSide::white) {
-        availableDirections = {Direction::topRight, Direction::topLeft};
-      } else {
-        availableDirections = {Direction::bottomRight, Direction::bottomLeft};
-      }
+    visualizeThreats(row, col, threats);
+    drowBoard("===== THREATS TO FIGURE =====");
+    
+    if (target.getState() == FigureState::none) {
+        cerr << "No figure at position " << selectPos << "!";
+        cin.ignore(); cin.get();
+        return;
+    }
+    
+    cout << "\n" << (target.getSide() == FigureSide::white ? "White" : "Black") << " " 
+         << (target.getState() == FigureState::piece ? "piece" : "king") << " at " << selectPos << "\n";
+    
+    if (!threats.empty()) {
+        cout << "\nThreatened by " << threats.size() << " opponent figures:\n";
+        for (const auto& t : threats) cout << "  - " << t.first << endl;
     } else {
-      if (attacker.getSide() == FigureSide::white) {
-        availableDirections = {Direction::bottomRight, Direction::bottomLeft};
-      } else {
-        availableDirections = {Direction::topRight, Direction::topLeft};
-      }
+        cout << "\nNot under direct threat from any opponent figures.";
     }
-    
-    for (Direction dir : availableDirections) {
-      // Перевіряємо чи є ворожа фігура поруч.
-      pair<int, int> enemyPos = getNextPosByDir(attackerRow, attackerCol, dir);
-      if (!inBounds(enemyPos.first, enemyPos.second)) continue;
-      
-      // Якщо це цільова фігура.
-      if (enemyPos.first == targetRow && enemyPos.second == targetCol) {
-        // Перевіряємо чи є вільна клітка за нею.
-        pair<int, int> behindPos = getNextPosByDir(targetRow, targetCol, dir);
-        if (!inBounds(behindPos.first, behindPos.second)) continue;
-        
-        Figure& behindFigure = checker.getFigures()[behindPos.first][behindPos.second];
-        if (behindFigure.getState() == FigureState::none) {
-          return true;
+    cout << "\n\n[Press Enter to continue]";
+    cin.ignore(); cin.get();
+}
+
+bool Interface::canAttackTarget(int ar, int ac, int tr, int tc, Figure& attacker) {
+    if (attacker.getState() == FigureState::king) {
+        for (Direction d : {Direction::topRight, Direction::bottomRight, Direction::topLeft, Direction::bottomLeft}) {
+            int cr = ar, cc = ac;
+            while (inBounds(cr, cc)) {
+                auto next = getNextPosByDir(cr, cc, d);
+                if (!inBounds(next.first, next.second)) break;
+                if (next.first == tr && next.second == tc) {
+                    auto behind = getNextPosByDir(tr, tc, d);
+                    if (inBounds(behind.first, behind.second) && 
+                        checker.getFigures()[behind.first][behind.second].getState() == FigureState::none)
+                        return true;
+                    break;
+                }
+                if (checker.getFigures()[next.first][next.second].getState() != FigureState::none) break;
+                cr = next.first; cc = next.second;
+            }
         }
-      }
+    } else {
+        for (Direction d : getDirections(attacker, whiteInDown)) {
+            auto enemyPos = getNextPosByDir(ar, ac, d);
+            if (!inBounds(enemyPos.first, enemyPos.second)) continue;
+            if (enemyPos.first == tr && enemyPos.second == tc) {
+                auto behind = getNextPosByDir(tr, tc, d);
+                if (inBounds(behind.first, behind.second) && 
+                    checker.getFigures()[behind.first][behind.second].getState() == FigureState::none)
+                    return true;
+            }
+        }
     }
-  }
-  return false;
+    return false;
 }
 
-void Interface::visualizeThreats(int targetRow, int targetCol, 
-                                const vector<pair<string, pair<int, int>>>& threats, bool isDrow)
-{ 
-  // Позначаємо цільову фігуру.
-  setBackgroudOfTile(targetRow, targetCol, TileMoment::active);
-  
-  // Позначаємо загрозні фігури.
-  for (const pair<string, pair<int, int>>& threat : threats) {
-    int threatRow = threat.second.first;
-    int threatCol = threat.second.second;
-    setBackgroudOfTile(threatRow, threatCol, TileMoment::attack);
-  }
-
-  // Позначення лінії атаки.
-  if (isDrow) {
-    for (const pair<string, pair<int, int>>& threat : threats) {
-      int threatRow = threat.second.first;
-      int threatCol = threat.second.second;
-      
-      // Знаходимо напрямок атаки
-      Direction attackDir = findAttackDirection(threatRow, threatCol, targetRow, targetCol);
-      if (attackDir != Direction::none) {
-        // Малюємо лінію атаки
-        drawAttackLine(threatRow, threatCol, targetRow, targetCol, attackDir);
-      }
+void Interface::visualizeThreats(int tr, int tc, const vector<pair<string, pair<int, int>>>& threats, bool drawLines) {
+    setBackgroudOfTile(tr, tc, TileMoment::active);
+    for (const auto& t : threats) setBackgroudOfTile(t.second.first, t.second.second, TileMoment::attack);
+    if (drawLines) {
+        for (const auto& t : threats) {
+            Direction dir = findAttackDirection(t.second.first, t.second.second, tr, tc);
+            if (dir != Direction::none) drawAttackLine(t.second.first, t.second.second, tr, tc, dir);
+        }
     }
-  }
 }
 
-Direction Interface::findAttackDirection(int fromRow, int fromCol, int toRow, int toCol)
-{
-  // Визначаємо різницю координат.
-  int rowDiff = toRow - fromRow;
-  int colDiff = toCol - fromCol;
-  
-  // Перевіряємо всі можливі напрямки.
-  if (rowDiff > 0 && colDiff > 0 && abs(rowDiff) == abs(colDiff)) {
-    return Direction::topRight;
-  } else if (rowDiff < 0 && colDiff > 0 && abs(rowDiff) == abs(colDiff)) {
-    return Direction::bottomRight;
-  } else if (rowDiff > 0 && colDiff < 0 && abs(rowDiff) == abs(colDiff)) {
-    return Direction::topLeft;
-  } else if (rowDiff < 0 && colDiff < 0 && abs(rowDiff) == abs(colDiff)) {
-    return Direction::bottomLeft;
-  }
-  
-  return Direction::none;
+Direction Interface::findAttackDirection(int fr, int fc, int tr, int tc) {
+    int rd = tr - fr, cd = tc - fc;
+    if (rd > 0 && cd > 0) return Direction::topRight;
+    if (rd < 0 && cd > 0) return Direction::bottomRight;
+    if (rd > 0 && cd < 0) return Direction::topLeft;
+    if (rd < 0 && cd < 0) return Direction::bottomLeft;
+    return Direction::none;
 }
 
-void Interface::drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, Direction dir)
-{
-  int currentRow = fromRow;
-  int currentCol = fromCol;
-  
-  while (currentRow != toRow || currentCol != toCol) {
-    // Позначаємо проміжні клітини.
-    if (!(currentRow == fromRow && currentCol == fromCol) &&
-        !(currentRow == toRow && currentCol == toCol)) {
-      setBackgroudOfTile(currentRow, currentCol, TileMoment::move);
+void Interface::drawAttackLine(int fr, int fc, int tr, int tc, Direction d) {
+    int cr = fr, cc = fc;
+    while (cr != tr || cc != tc) {
+        if (!(cr == fr && cc == fc) && !(cr == tr && cc == tc))
+            setBackgroudOfTile(cr, cc, TileMoment::move);
+        auto next = getNextPosByDir(cr, cc, d);
+        if (!inBounds(next.first, next.second)) break;
+        cr = next.first; cc = next.second;
     }
+}
+
+void Interface::showThreatsToAllFigures() {
+    clearTiles();
+    drowBoard("===== THREATS TO ALL FIGURES =====");
+    cout << "\nEnter side [white/black] (w/b): ";
+    string side; cin >> side;
+    if (side != "w" && side != "white" && side != "b" && side != "black") throw "Invalid side!";
     
-    // Переходимо до наступної клітини.
-    pair<int, int> nextPos = getNextPosByDir(currentRow, currentCol, dir);
-    if (!inBounds(nextPos.first, nextPos.second)) break;
-    
-    currentRow = nextPos.first;
-    currentCol = nextPos.second;
-  }
+    FigureSide targetSide = (side == "w" || side == "white") ? FigureSide::white : FigureSide::black;
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (checker.getFigures()[i][j].getSide() == targetSide) {
+                vector<pair<string, pair<int, int>>> threats;
+                for (int ti = 0; ti < 8; ti++) {
+                    for (int tj = 0; tj < 8; tj++) {
+                        Figure& potential = checker.getFigures()[ti][tj];
+                        if (potential.getState() == FigureState::none) continue;
+                        if (potential.getSide() == targetSide) continue;
+                        if (canAttackTarget(ti, tj, i, j, potential))
+                            threats.push_back({"", {ti, tj}});
+                    }
+                }
+                visualizeThreats(i, j, threats, false);
+            }
+        }
+    }
+    drowBoard("===== THREATS TO ALL FIGURES =====");
+    cout << "\n[Press any key to continue]";
+    cin.ignore(); cin.get();
 }
 
 void Interface::whereWhiteSide() {
-  CLS();
-  cout << endl << ((whiteInDown) ? "White side is down." : "White side is up.");
-  cout << endl << "[Press eny key to continue]" << endl;
-  cin.ignore();
-  cin.get();
+    CLS();
+    cout << "\nWhite side is " << (whiteInDown ? "down." : "up.");
+    cout << "\n[Press any key to continue]";
+    cin.ignore(); cin.get();
 }
 
 void Interface::showMenu() {
-  while (true) {
-    clearTiles();
-    drowBoard("===== CHECKERS MENU =====");
-    cout << endl << "1. Analyze figure moves and attacks" << endl;
-    cout << "2. Analyze threats to figure" << endl;
-    cout << "3. Analyze threats to all figures" << endl;
-    cout << "4. Where is white side?" << endl;
-    cout << "5. Exit" << endl;
-    cout << endl << "Choice: ";
-    
-    int choice;
-    cin.clear();
-    cin.ignore();
-    if (!(cin >> choice)) {
-      throw "Invalid mode!";
+    while (true) {
+        clearTiles();
+        drowBoard("===== CHECKERS MENU =====");
+        cout << "\n1. Analyze figure moves and attacks\n2. Analyze threats to figure\n"
+             << "3. Analyze threats to all figures\n4. Where is white side?\n5. Exit\n\nChoice: ";
+        
+        int choice;
+        if (!(cin >> choice)) {
+            cin.clear(); cin.ignore(1000, '\n');
+            continue;
+        }
+        cin.ignore();
+        
+        switch (choice) {
+            case 1: showPossibleMovesAndAttacks(); break;
+            case 2: showThreatsToFigure(); break;
+            case 3: showThreatsToAllFigures(); break;
+            case 4: whereWhiteSide(); break;
+            case 5: return;
+            default: break;
+        }
     }
-    
-    switch (choice) {
-      case 1: showPossibleMovesAndAttacks(); break;
-      case 2: showThreatsToFigure(); break;
-      case 3: showThreatsToAllFigures(); break;
-      case 4: whereWhiteSide(); break;
-      case 5: return;
-    }
-  }
 }
