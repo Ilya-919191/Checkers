@@ -34,31 +34,22 @@ class Interface
 	bool whiteInDown{true};
 
 	void clearTiles();
-	void whereWhiteSide();
 	pair<int, int> getNextPosByDir(int i, int j, Direction direction);
 	Figure& getNextFigureByDir(int i, int j, Direction direction);
 	Direction reversDir(Direction direction);
 	void setBackgroudOfTile(int i, int j, TileMoment moment);
-
-	bool canAttackTarget(int attackerRow, int attackerCol, int targetRow, int targetCol, Figure& attacker);
-  void visualizeThreats(int targetRow, int targetCol, const vector<pair<string, pair<int, int>>>& threats, bool isDrow = true);
-  Direction findAttackDirection(int fromRow, int fromCol, int toRow, int toCol);
-  void drawAttackLine(int fromRow, int fromCol, int toRow, int toCol, Direction dir);
 	int figureAnalisis(int i, int j, Direction direction, Figure& startFigure, bool isDrawing,
 										bool isAttacking, int attackCount, AttackPath& currentPath, AttackPath& bestPath,
 										vector<pair<int, int>>& visitedPositions);
-	void showWhoCanAttackFigure();
-
 public:
 	Interface(CheckerBoard& checkerBoard);
 
 	void setWhiteSide();
-	bool isWhiteInDown() const { return whiteInDown; }
+	void whereWhiteSide();
 	void fillBoardFromFile(std::string fileName);
 	void showPossibleMovesAndAttacks();
-	void drowBoard(string text = "");
-	void showThreatsToFigure();
 	void showThreatsToAllFigures();
+	void drowBoard(string text = "");
 	void showMenu();
 };
 
