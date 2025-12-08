@@ -15,7 +15,7 @@ public:
 	Figure **getFigures() const { return figures; };
 	Board **getBoard() const { return board; }
 
-	bool transformPosition(std::string pos, int col, int row) const;
+	bool transformPosition(const std::string& pos, int& col, int& row) const;
 };
 
 #endif // CHECKER_BOARD_HPP
